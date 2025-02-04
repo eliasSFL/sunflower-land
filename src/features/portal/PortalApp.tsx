@@ -5,7 +5,7 @@ import { Ocean } from "features/world/ui/Ocean";
 
 import { WalletProvider } from "features/wallet/WalletProvider";
 
-import { PortalExample } from "./example/PortalExample";
+import { CrossingRoad } from "./crossing-road/CrossingRoad";
 
 export const PortalApp: React.FC = () => {
   return (
@@ -14,7 +14,7 @@ export const PortalApp: React.FC = () => {
       {/* PortalProvider - gives you access to a xstate machine which handles state management */}
       <PortalProvider>
         <Ocean>
-          <PortalExample />
+          <CrossingRoad />
         </Ocean>
       </PortalProvider>
     </WalletProvider>
