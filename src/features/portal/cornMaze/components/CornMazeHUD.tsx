@@ -23,7 +23,6 @@ import { TimerDisplay } from "./TimerDisplay";
 
 const _score = (state: PortalMachineState) => state.context.score;
 const _health = (state: PortalMachineState) => state.context.health;
-const _startedAt = (state: PortalMachineState) => state.context.startedAt;
 const _timeElapsed = (state: PortalMachineState) => state.context.timeElapsed;
 const _ready = (state: PortalMachineState) => state.matches("ready");
 const _playing = (state: PortalMachineState) => state.matches("playing");
@@ -35,7 +34,6 @@ export const CornMazeHUD: React.FC = () => {
 
   const score = useSelector(portalService, _score);
   const health = useSelector(portalService, _health);
-  const startedAt = useSelector(portalService, _startedAt);
   const timeElapsed = useSelector(portalService, _timeElapsed);
   const ready = useSelector(portalService, _ready);
   const playing = useSelector(portalService, _playing);
@@ -127,9 +125,7 @@ export const CornMazeHUD: React.FC = () => {
         </div>
 
         {/* Timer — bottom-right, only while actively running */}
-        {(playing || won || lost) && (
-          <TimerDisplay startedAt={startedAt} timeLeft={timeLeft} />
-        )}
+        {(playing || won || lost) && <TimerDisplay timeLeft={timeLeft} />}
       </HudContainer>
 
       {/* Tips / ready modal */}
