@@ -4,7 +4,7 @@ import { NPC_WEARABLES } from "lib/npcs";
 import { BumpkinContainer } from "features/world/containers/BumpkinContainer";
 import { SOUNDS } from "assets/sound-effects/soundEffects";
 import { ENEMIES, Enemy } from "./lib/enemies";
-import { CORN_MAZES, getCurrentMazeWeek } from "./lib/mazes";
+import { CORN_MAZES, getCurrentMazeDay } from "./lib/mazes";
 import { MachineInterpreter } from "./lib/portalMachine";
 
 const LUNA: NPCBumpkin = {
@@ -18,28 +18,28 @@ export class CornMazeScene extends BaseScene {
   sceneId: SceneId = "corn_maze";
   // Don't allow portal hit to be triggered multiple times
   canHandlePortalHit = true;
-  currentWeek: number;
+  currentDay: number;
 
   enemies?: Phaser.GameObjects.Group;
   spotlight?: Phaser.GameObjects.Image;
   mazePortal?: Phaser.GameObjects.Sprite;
 
   constructor() {
-    // Pick the week once at scene construction — same rotation for every attempt
+    // Pick the day once at scene construction — same rotation for every attempt
     // started today, advances at UTC midnight. Scene restarts (retry) construct
     // a fresh instance so a midnight rollover mid-session would take effect then.
-    const week = getCurrentMazeWeek();
+    const day = getCurrentMazeDay();
 
     super({
       name: "corn_maze",
       // The maze maps were authored against the 2023 tilesheet (corn walls + witches eve
       // decorations at GIDs that have since been reassigned). Point BaseScene at the
       // portal-local archived tilesheet so the GIDs still resolve to the right art.
-      map: { json: CORN_MAZES[week], imageKey: "corn_maze_tileset" },
+      map: { json: CORN_MAZES[day], imageKey: "corn_maze_tileset" },
       audio: { fx: { walk_key: "sand_footstep" } },
     });
 
-    this.currentWeek = week;
+    this.currentDay = day;
   }
 
   public get portalService(): MachineInterpreter | undefined {
@@ -202,7 +202,7 @@ export class CornMazeScene extends BaseScene {
 
   setUpEnemies() {
     this.enemies = this.add.group();
-    const enemies = ENEMIES[this.currentWeek] ?? [];
+    const enemies = ENEMIES[this.currentDay] ?? [];
 
     enemies.forEach((enemy) => {
       const container = new BumpkinContainer({

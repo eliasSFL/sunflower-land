@@ -9,8 +9,9 @@ import maze8 from "./maps/maze8.json";
 import maze9 from "./maps/maze9.json";
 import maze13 from "./maps/maze13.json";
 
-// 10 unique maps across the 13-week Witches' Eve season: weeks 10-12 reused
-// weeks 1-3 in the original, and week 13 was the one-off Halloween maze.
+// 10 unique maps across the original 13-week Witches' Eve season: days 10-12
+// reuse maps 1-3 (weeks 10-12 in the original), and day 13 is the one-off
+// Halloween maze. Repurposed as a daily rotation for the portal.
 export const CORN_MAZES: Record<number, unknown> = {
   1: maze1,
   2: maze2,
@@ -27,14 +28,14 @@ export const CORN_MAZES: Record<number, unknown> = {
   13: maze13,
 };
 
-export const TOTAL_MAZE_WEEKS = 13;
+export const TOTAL_MAZE_DAYS = 13;
 
 /**
- * Picks the maze week for today. Cycles through weeks 1-13 on a daily cadence —
- * same week for all attempts started on the same UTC day, advances to the next
- * week at UTC midnight.
+ * Picks the maze day for today. Cycles through days 1-13 on a daily cadence —
+ * same day for all attempts started on the same UTC day, advances to the next
+ * at UTC midnight.
  */
-export function getCurrentMazeWeek(now: number = Date.now()): number {
-  const day = Math.floor(now / 86_400_000);
-  return (day % TOTAL_MAZE_WEEKS) + 1;
+export function getCurrentMazeDay(now: number = Date.now()): number {
+  const dayIndex = Math.floor(now / 86_400_000);
+  return (dayIndex % TOTAL_MAZE_DAYS) + 1;
 }
