@@ -81,21 +81,14 @@ export class CornMazeScene extends BaseScene {
 
       // Retry: returning to `ready` from a terminal state means the player wants
       // another attempt — restart the scene to respawn crows/enemies/player.
-      if (
-        current === "ready" &&
-        (previousState === "won" || previousState === "lost")
-      ) {
+      if (current === "ready" && previousState === "gameover") {
         previousState = current;
         this.scene.restart();
         return;
       }
       previousState = current;
 
-      if (
-        state.matches("ready") ||
-        state.matches("won") ||
-        state.matches("lost")
-      ) {
+      if (state.matches("ready") || state.matches("gameover")) {
         if (!this.scene.isPaused()) this.scene.pause();
       }
 

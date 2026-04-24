@@ -40,8 +40,7 @@ export type PortalState = {
     | "loading"
     | "ready"
     | "playing"
-    | "won"
-    | "lost";
+    | "gameover";
   context: Context;
 };
 
@@ -141,7 +140,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
       },
       always: [
         {
-          target: "lost",
+          target: "gameover",
           cond: (context) =>
             context.health <= 0 ||
             context.timeElapsed >= MAZE_TIME_LIMIT_SECONDS,
@@ -170,18 +169,11 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
               context.startedAt - HIT_PENALTY_SECONDS * 1000,
           }),
         },
-        PORTAL_HIT: { target: "won" },
+        PORTAL_HIT: { target: "gameover" },
       },
     },
 
-    won: {
-      entry: (context) => submitScore({ score: context.score }),
-      on: {
-        RETRY: { target: "ready" },
-      },
-    },
-
-    lost: {
+    gameover: {
       entry: (context) => submitScore({ score: context.score }),
       on: {
         RETRY: { target: "ready" },

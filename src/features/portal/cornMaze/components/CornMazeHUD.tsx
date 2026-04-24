@@ -26,8 +26,7 @@ const _health = (state: PortalMachineState) => state.context.health;
 const _timeElapsed = (state: PortalMachineState) => state.context.timeElapsed;
 const _ready = (state: PortalMachineState) => state.matches("ready");
 const _playing = (state: PortalMachineState) => state.matches("playing");
-const _won = (state: PortalMachineState) => state.matches("won");
-const _lost = (state: PortalMachineState) => state.matches("lost");
+const _gameover = (state: PortalMachineState) => state.matches("gameover");
 
 export const CornMazeHUD: React.FC = () => {
   const { portalService } = useContext(PortalContext);
@@ -37,8 +36,7 @@ export const CornMazeHUD: React.FC = () => {
   const timeElapsed = useSelector(portalService, _timeElapsed);
   const ready = useSelector(portalService, _ready);
   const playing = useSelector(portalService, _playing);
-  const won = useSelector(portalService, _won);
-  const lost = useSelector(portalService, _lost);
+  const gameover = useSelector(portalService, _gameover);
 
   const timeLeft = Math.max(0, MAZE_TIME_LIMIT_SECONDS - timeElapsed);
 
@@ -67,7 +65,7 @@ export const CornMazeHUD: React.FC = () => {
         </div>
 
         {/* Score — top-centre */}
-        {(playing || won || lost) && (
+        {(playing || gameover) && (
           <div
             className="absolute left-1/2 -translate-x-1/2"
             style={{ top: `${PIXEL_SCALE * 3}px` }}
@@ -125,7 +123,7 @@ export const CornMazeHUD: React.FC = () => {
         </div>
 
         {/* Timer — bottom-right, only while actively running */}
-        {(playing || won || lost) && <TimerDisplay timeLeft={timeLeft} />}
+        {(playing || gameover) && <TimerDisplay timeLeft={timeLeft} />}
       </HudContainer>
 
       {/* Tips / ready modal */}
@@ -153,41 +151,15 @@ export const CornMazeHUD: React.FC = () => {
         </Panel>
       </Modal>
 
-      {/* Winning modal */}
-      <Modal show={won}>
+      {/* Game over modal — one flow regardless of how the run ended. */}
+      <Modal show={gameover}>
         <Panel bumpkinParts={NPC_WEARABLES.luna}>
           <div className="p-1 space-y-2 mb-2 flex flex-col text-xs">
-            <p>{"Ah, you've returned! Well played, adventurer."}</p>
             <p>{`You collected ${score} ${score === 1 ? "crow" : "crows"}.`}</p>
           </div>
           <div className="flex gap-1">
             <Button onClick={() => portalService.send("RETRY")}>
               {"Play again"}
-            </Button>
-            <Button onClick={goHome}>{"Home"}</Button>
-          </div>
-        </Panel>
-      </Modal>
-
-      {/* Losing modal */}
-      <Modal show={lost}>
-        <Panel
-          bumpkinParts={{
-            ...NPC_WEARABLES.luna,
-            body: "Light Brown Worried Farmer Potion",
-          }}
-        >
-          <div className="p-1 space-y-2 mb-2 flex flex-col text-xs">
-            <p>
-              {timeLeft === 0
-                ? "Oh no, time's up! My poor crows are still lost."
-                : "Oh no, you've been outwitted by the cunning enemies!"}
-            </p>
-            <p>{`You collected ${score} ${score === 1 ? "crow" : "crows"}.`}</p>
-          </div>
-          <div className="flex gap-1">
-            <Button onClick={() => portalService.send("RETRY")}>
-              {"Try again"}
             </Button>
             <Button onClick={goHome}>{"Home"}</Button>
           </div>
