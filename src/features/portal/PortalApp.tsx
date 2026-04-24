@@ -1,22 +1,16 @@
 import React from "react";
 
-import { PortalProvider } from "./example/lib/PortalProvider";
-import { Ocean } from "features/world/ui/Ocean";
-
 import { WalletProvider } from "features/wallet/WalletProvider";
 
-import { PortalExample } from "./example/PortalExample";
+import { PortalProvider as CornMazePortalProvider } from "./cornMaze/lib/PortalProvider";
+import { PortalCornMaze } from "./cornMaze/PortalCornMaze";
 
 export const PortalApp: React.FC = () => {
   return (
-    // WalletProvider - if you need to connect to a players wallet
     <WalletProvider>
-      {/* PortalProvider - gives you access to a xstate machine which handles state management */}
-      <PortalProvider>
-        <Ocean>
-          <PortalExample />
-        </Ocean>
-      </PortalProvider>
+      <CornMazePortalProvider>
+        <PortalCornMaze />
+      </CornMazePortalProvider>
     </WalletProvider>
   );
 };
