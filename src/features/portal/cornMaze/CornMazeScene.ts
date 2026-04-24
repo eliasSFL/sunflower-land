@@ -1,11 +1,10 @@
-import cornMazeJSON from "assets/map/corn_maze.json";
-
 import { BaseScene, NPCBumpkin } from "features/world/scenes/BaseScene";
 import { SceneId } from "features/world/mmoMachine";
 import { NPC_WEARABLES } from "lib/npcs";
 import { BumpkinContainer } from "features/world/containers/BumpkinContainer";
 import { SOUNDS } from "assets/sound-effects/soundEffects";
 import { ENEMIES, Enemy } from "./lib/enemies";
+import { CORN_MAZES, getCurrentMazeWeek } from "./lib/mazes";
 import { MachineInterpreter } from "./lib/portalMachine";
 
 const LUNA: NPCBumpkin = {
@@ -19,22 +18,28 @@ export class CornMazeScene extends BaseScene {
   sceneId: SceneId = "corn_maze";
   // Don't allow portal hit to be triggered multiple times
   canHandlePortalHit = true;
-  // v1 runs the week 1 maze layout; rotation lives in ENEMIES for later.
-  currentWeek = 1;
+  currentWeek: number;
 
   enemies?: Phaser.GameObjects.Group;
   spotlight?: Phaser.GameObjects.Image;
   mazePortal?: Phaser.GameObjects.Sprite;
 
   constructor() {
+    // Pick the week once at scene construction — same rotation for every attempt
+    // started today, advances at UTC midnight. Scene restarts (retry) construct
+    // a fresh instance so a midnight rollover mid-session would take effect then.
+    const week = getCurrentMazeWeek();
+
     super({
       name: "corn_maze",
-      // The maze map was authored against the 2023 tilesheet (corn walls + witches eve
+      // The maze maps were authored against the 2023 tilesheet (corn walls + witches eve
       // decorations at GIDs that have since been reassigned). Point BaseScene at the
       // portal-local archived tilesheet so the GIDs still resolve to the right art.
-      map: { json: cornMazeJSON, imageKey: "corn_maze_tileset" },
+      map: { json: CORN_MAZES[week], imageKey: "corn_maze_tileset" },
       audio: { fx: { walk_key: "sand_footstep" } },
     });
+
+    this.currentWeek = week;
   }
 
   public get portalService(): MachineInterpreter | undefined {
