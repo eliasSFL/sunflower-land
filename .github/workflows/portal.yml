@@ -10,7 +10,7 @@ on:
 jobs:
   deploy:
     concurrency: corn-maze-portal-deploy
-    environment: develop
+    environment: corn-maze
     runs-on: ubuntu-latest
     steps:
       - name: Get current date
