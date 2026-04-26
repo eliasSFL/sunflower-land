@@ -4,12 +4,9 @@ import { useSelector } from "@xstate/react";
 import { HudContainer } from "components/ui/HudContainer";
 import { Label } from "components/ui/Label";
 import { SquareIcon } from "components/ui/SquareIcon";
-import { Button } from "components/ui/Button";
 import { Modal } from "components/ui/Modal";
-import { Panel } from "components/ui/Panel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import crowIcon from "assets/decorations/crow_without_shadow.png";
-import { NPC_WEARABLES } from "lib/npcs";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { goHome } from "../../lib/portalUtil";
 
@@ -18,8 +15,10 @@ import {
   DEFAULT_HEALTH,
   MAZE_TIME_LIMIT_SECONDS,
   PortalMachineState,
+  TOTAL_CROWS,
 } from "../lib/portalMachine";
 import { TimerDisplay } from "./TimerDisplay";
+import { CornMazeRulesPanel } from "./panel/CornMazeRulesPanel";
 
 const _score = (state: PortalMachineState) => state.context.score;
 const _health = (state: PortalMachineState) => state.context.health;
@@ -126,44 +125,26 @@ export const CornMazeHUD: React.FC = () => {
         {(playing || gameover) && <TimerDisplay timeLeft={timeLeft} />}
       </HudContainer>
 
-      {/* Tips / ready modal */}
+      {/* Intro / tips modal */}
       <Modal show={ready}>
-        <Panel
-          bumpkinParts={{
-            ...NPC_WEARABLES.luna,
-            body: "Light Brown Worried Farmer Potion",
-          }}
-        >
-          <div className="p-1 space-y-2 mb-2 flex flex-col text-xs">
-            <p>{"Welcome to my corn maze, brave adventurer!"}</p>
-            <p>
-              {
-                "Collect as many crows as you can before the timer runs out. Watch out for the wandering enemies — they'll cost you a life and some time."
-              }
-            </p>
-            <p>
-              {"Touch me at the portal to end your run and submit your score."}
-            </p>
-          </div>
-          <Button onClick={() => portalService.send("START")}>
-            {"Let's go!"}
-          </Button>
-        </Panel>
+        <CornMazeRulesPanel
+          mode="introduction"
+          showScore={false}
+          showExitButton
+          confirmButtonText="Let's go!"
+          onConfirm={() => portalService.send("START")}
+        />
       </Modal>
 
-      {/* Game over modal — one flow regardless of how the run ended. */}
+      {/* Game over — same panel, mode toggles based on whether all crows were collected. */}
       <Modal show={gameover}>
-        <Panel bumpkinParts={NPC_WEARABLES.luna}>
-          <div className="p-1 space-y-2 mb-2 flex flex-col text-xs">
-            <p>{`You collected ${score} ${score === 1 ? "crow" : "crows"}.`}</p>
-          </div>
-          <div className="flex gap-1">
-            <Button onClick={() => portalService.send("RETRY")}>
-              {"Play again"}
-            </Button>
-            <Button onClick={goHome}>{"Home"}</Button>
-          </div>
-        </Panel>
+        <CornMazeRulesPanel
+          mode={score >= TOTAL_CROWS ? "success" : "failed"}
+          showScore
+          showExitButton
+          confirmButtonText="Play again"
+          onConfirm={() => portalService.send("RETRY")}
+        />
       </Modal>
     </>
   );
