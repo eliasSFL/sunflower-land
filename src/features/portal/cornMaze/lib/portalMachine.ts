@@ -8,6 +8,9 @@ import { startAttempt, submitScore } from "../../lib/portalUtil";
 
 export const MAZE_TIME_LIMIT_SECONDS = 3 * 60;
 export const DEFAULT_HEALTH = 3;
+// Every map has exactly 25 crows in its `Crows` tile layer. Collecting them
+// all is a perfect run and ends the attempt immediately.
+export const TOTAL_CROWS = 25;
 
 export interface Context {
   id: number;
@@ -142,7 +145,8 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           target: "gameover",
           cond: (context) =>
             context.health <= 0 ||
-            context.timeElapsed >= MAZE_TIME_LIMIT_SECONDS,
+            context.timeElapsed >= MAZE_TIME_LIMIT_SECONDS ||
+            context.score >= TOTAL_CROWS,
         },
       ],
       on: {
