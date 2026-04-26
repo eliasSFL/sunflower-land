@@ -44,6 +44,10 @@ jobs:
           VITE_PRIVATE_IMAGE_URL: "https://sunflower-land.com/game-assets"
           VITE_API_URL: "https://api-dev.sunflower-land.com"
           VITE_PORTAL_GAME_URL: "https://sunflower-land.com/testnet/"
+          # TODO: replace with the corn-maze portal author's Polygon wallet
+          # before release. While zero-address, the donate panel renders as
+          # "Coming soon" and the donate button is disabled.
+          VITE_PORTAL_DONATION_ADDRESS: "0x0000000000000000000000000000000000000000"
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
