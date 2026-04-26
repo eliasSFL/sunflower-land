@@ -21,7 +21,6 @@ export class CornMazeScene extends BaseScene {
   currentDay: number;
 
   enemies?: Phaser.GameObjects.Group;
-  spotlight?: Phaser.GameObjects.Image;
   mazePortal?: Phaser.GameObjects.Sprite;
 
   constructor() {
@@ -56,7 +55,6 @@ export class CornMazeScene extends BaseScene {
       frameHeight: 12,
     });
     this.load.image("crow", "world/crow.png");
-    this.load.image("spotlight", "world/spotlight.webp");
 
     this.load.audio("ouph", SOUNDS.voices.ouph);
     this.load.audio("crow_collected", SOUNDS.notifications.crow_collected);
@@ -73,7 +71,6 @@ export class CornMazeScene extends BaseScene {
     this.setUpLuna();
     this.setUpEnemies();
     this.setUpEnemyColliders();
-    this.setUpSpotlight();
     this.setUpCrows();
 
     // Scene boots paused; HUD resumes it once the player dismisses the tips modal.
@@ -110,20 +107,6 @@ export class CornMazeScene extends BaseScene {
     this.events.once("shutdown", () => subscription?.unsubscribe());
 
     this.portalService?.send("SCENE_LOADED");
-  }
-
-  setUpSpotlight() {
-    this.spotlight = this.add.image(0, 0, "spotlight");
-    this.spotlight.setOrigin(0, 0);
-    this.spotlight.setDepth(100000000000);
-    this.updateSpotlightPosition();
-  }
-
-  updateSpotlightPosition() {
-    if (this.currentPlayer && this.spotlight) {
-      this.spotlight.x = this.currentPlayer.x - this.spotlight.width / 2;
-      this.spotlight.y = this.currentPlayer.y - this.spotlight.height / 2;
-    }
   }
 
   setUpPortal() {
@@ -339,6 +322,5 @@ export class CornMazeScene extends BaseScene {
 
   update(): void {
     super.update();
-    this.updateSpotlightPosition();
   }
 }
