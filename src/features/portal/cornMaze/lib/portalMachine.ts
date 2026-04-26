@@ -7,7 +7,6 @@ import { decodeToken } from "features/auth/actions/login";
 import { startAttempt, submitScore } from "../../lib/portalUtil";
 
 export const MAZE_TIME_LIMIT_SECONDS = 3 * 60;
-export const HIT_PENALTY_SECONDS = 5;
 export const DEFAULT_HEALTH = 3;
 
 export interface Context {
@@ -165,8 +164,6 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
         HIT_ENEMY: {
           actions: assign({
             health: (context) => Math.max(0, context.health - 1),
-            startedAt: (context) =>
-              context.startedAt - HIT_PENALTY_SECONDS * 1000,
           }),
         },
         PORTAL_HIT: { target: "gameover" },
