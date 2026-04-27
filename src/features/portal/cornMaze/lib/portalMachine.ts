@@ -22,6 +22,15 @@ export interface Context {
   crowIds: string[];
   startedAt: number;
   timeElapsed: number;
+  // When the run is paused for an early-exit confirmation, the timestamp the
+  // pause began. Used to shift `startedAt` by the pause duration on resume so
+  // the elapsed timer keeps the player's true play time.
+  pausedAt?: number;
+
+  // When set, overrides the daily maze rotation. Used by the beta map-selector
+  // (gated behind the CORN_MAZE_MAP_SELECTOR_BETA flag) so testers can pick a
+  // specific layout. Undefined = use getCurrentMazeDay().
+  selectedDay?: number;
 }
 
 export type PortalEvent =
@@ -30,9 +39,12 @@ export type PortalEvent =
   | { type: "HIT_ENEMY" }
   | { type: "COLLECT_CROW"; crowId: string }
   | { type: "PORTAL_HIT" }
+  | { type: "CONFIRM_EXIT" }
+  | { type: "CANCEL_EXIT" }
   | { type: "TICK" }
   | { type: "RETRY" }
-  | { type: "PURCHASED" };
+  | { type: "PURCHASED" }
+  | { type: "SELECT_DAY"; day: number | undefined };
 
 export type PortalState = {
   value:
@@ -42,6 +54,7 @@ export type PortalState = {
     | "loading"
     | "ready"
     | "playing"
+    | "confirmingExit"
     | "gameover";
   context: Context;
 };
@@ -130,6 +143,12 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
             () => startAttempt(),
           ],
         },
+        SELECT_DAY: {
+          actions: assign({
+            selectedDay: (_, event) =>
+              event.type === "SELECT_DAY" ? event.day : undefined,
+          }),
+        },
       },
     },
 
@@ -170,7 +189,29 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
             health: (context) => Math.max(0, context.health - 1),
           }),
         },
-        PORTAL_HIT: { target: "gameover" },
+        // Touching Luna while time and lives remain pops a confirmation modal
+        // rather than ending the run outright. Auto-game-over conditions
+        // (timer / lives / all crows) take precedence via the `always` block
+        // above and run before this event would be processed.
+        PORTAL_HIT: { target: "confirmingExit" },
+      },
+    },
+
+    confirmingExit: {
+      entry: assign<Context, PortalEvent>({ pausedAt: (_) => Date.now() }),
+      on: {
+        CONFIRM_EXIT: { target: "gameover" },
+        CANCEL_EXIT: {
+          target: "playing",
+          // Shift `startedAt` forward by the pause duration so `timeElapsed`
+          // stays accurate to actual play time when the run resumes.
+          actions: assign<Context, PortalEvent>({
+            startedAt: (context) =>
+              context.startedAt +
+              (Date.now() - (context.pausedAt ?? Date.now())),
+            pausedAt: (_) => undefined,
+          }),
+        },
       },
     },
 

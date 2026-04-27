@@ -3,12 +3,15 @@ import { useSelector } from "@xstate/react";
 
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
+import { DropdownPanel } from "components/ui/DropdownPanel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
 import { goHome } from "features/portal/lib/portalUtil";
+import { hasFeatureAccess } from "lib/flags";
 import { PortalContext } from "../../lib/PortalProvider";
 import { PortalMachineState, TOTAL_CROWS } from "../../lib/portalMachine";
+import { TOTAL_MAZE_DAYS, getCurrentMazeDay } from "../../lib/mazes";
 import { CornMazeNavigationButtons } from "./CornMazeNavigationButtons";
 import { CornMazeMailbox } from "./CornMazeMailbox";
 import { CornMazeMissions } from "./CornMazeMissions";
@@ -20,6 +23,7 @@ const _state = (state: PortalMachineState) => state.context.state;
 const _minigame = (state: PortalMachineState) =>
   state.context.state?.minigames.games["corn-maze"];
 const _score = (state: PortalMachineState) => state.context.score;
+const _selectedDay = (state: PortalMachineState) => state.context.selectedDay;
 
 interface Props {
   mode: "introduction" | "success" | "failed";
@@ -41,6 +45,12 @@ export const CornMazeHome: React.FC<Props> = ({
   const state = useSelector(portalService, _state);
   const minigame = useSelector(portalService, _minigame);
   const score = useSelector(portalService, _score);
+  const selectedDay = useSelector(portalService, _selectedDay);
+
+  const showMapSelector =
+    mode === "introduction" &&
+    !!state &&
+    hasFeatureAccess(state, "CORN_MAZE_MAP_SELECTOR_BETA");
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const personalHighscore = minigame?.highscore ?? 0;
@@ -91,6 +101,36 @@ export const CornMazeHome: React.FC<Props> = ({
         <div className="mb-2">
           <CornMazeNavigationButtons setPage={setPage} />
         </div>
+
+        {/* Beta map selector — gated on CORN_MAZE_MAP_SELECTOR_BETA. Replaces
+         * the daily rotation while on; "auto" resets to the rotation. */}
+        {showMapSelector && (
+          <div className="mb-2 flex flex-col gap-1 px-1">
+            <Label type="warning" icon={SUNNYSIDE.icons.expression_alerted}>
+              {"Map (beta)"}
+            </Label>
+            <DropdownPanel<string>
+              value={selectedDay !== undefined ? String(selectedDay) : "auto"}
+              onChange={(value) =>
+                portalService.send("SELECT_DAY", {
+                  day: value === "auto" ? undefined : Number(value),
+                })
+              }
+              options={[
+                {
+                  value: "auto",
+                  label: `Today's map (Day ${getCurrentMazeDay()})`,
+                },
+                ...Array.from({ length: TOTAL_MAZE_DAYS }, (_, i) => i + 1).map(
+                  (day) => ({
+                    value: String(day),
+                    label: `Day ${day}`,
+                  }),
+                ),
+              ]}
+            />
+          </div>
+        )}
 
         {/* Scores panel. */}
         {hasState && (

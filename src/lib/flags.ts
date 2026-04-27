@@ -136,6 +136,8 @@ const FEATURE_FLAGS = {
     !!((game.wardrobe.Halo ?? 0) > 0) && !!game.inventory["Beta Pass"]?.gt(0),
 
   CHAACS_TEMPLE_BETA: betaFeatureFlag,
+  /** Lets the player pick a maze layout from the corn maze tips modal. Replaces the daily rotation while on. */
+  CORN_MAZE_MAP_SELECTOR_BETA: betaFeatureFlag,
   SALT_FARM: betaFeatureFlag,
 
   OBSIDIAN_SHRINE_BULK_FERTILISE: betaFeatureFlag,

@@ -7,17 +7,26 @@ import { Preloader } from "features/world/scenes/Preloader";
 import { useActor } from "@xstate/react";
 
 import { PortalContext } from "./lib/PortalProvider";
-import { CornMazeScene } from "./CornMazeScene";
+import { CornMazeScene, setMazeDayOverride } from "./CornMazeScene";
 
 export const CornMazePhaser: React.FC = () => {
   const { portalService } = useContext(PortalContext);
   const [portalState] = useActor(portalService);
 
-  const game = useRef<Game>(undefined);
+  const game = useRef<Game | undefined>(undefined);
   const scene = "corn_maze";
   const scenes = [Preloader, CornMazeScene];
 
+  // Mount the Phaser game exactly once. Map swaps (daily rotation, beta
+  // selector, retries) happen via `scene.restart({ day })` from inside the
+  // scene itself — see `CornMazeScene.init`. Tearing down the Game on every
+  // day change races Phaser's async destroy and corrupts shared state
+  // (parent div, audio context, WebGL).
   useEffect(() => {
+    // Read the initial day off the machine context and stash it on the
+    // module-level override so the scene constructor picks it up.
+    setMazeDayOverride(portalState.context.selectedDay);
+
     const config: Phaser.Types.Core.GameConfig = {
       type: AUTO,
       fps: { target: 30, smoothStep: true },
@@ -46,7 +55,6 @@ export const CornMazePhaser: React.FC = () => {
     };
 
     game.current = new Game(config);
-
     game.current.registry.set("initialScene", scene);
     game.current.registry.set("gameState", portalState.context.state);
     game.current.registry.set("id", portalState.context.id);
@@ -54,7 +62,10 @@ export const CornMazePhaser: React.FC = () => {
 
     return () => {
       game.current?.destroy(true);
+      game.current = undefined;
+      setMazeDayOverride(undefined);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <div id="game-content" />;

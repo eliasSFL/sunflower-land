@@ -5,6 +5,7 @@ import { HudContainer } from "components/ui/HudContainer";
 import { Label } from "components/ui/Label";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { Modal } from "components/ui/Modal";
+import { ConfirmationModal } from "components/ui/ConfirmationModal";
 import { SUNNYSIDE } from "assets/sunnyside";
 import crowIcon from "assets/decorations/crow_without_shadow.png";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -26,6 +27,8 @@ const _timeElapsed = (state: PortalMachineState) => state.context.timeElapsed;
 const _ready = (state: PortalMachineState) => state.matches("ready");
 const _playing = (state: PortalMachineState) => state.matches("playing");
 const _gameover = (state: PortalMachineState) => state.matches("gameover");
+const _confirmingExit = (state: PortalMachineState) =>
+  state.matches("confirmingExit");
 
 export const CornMazeHUD: React.FC = () => {
   const { portalService } = useContext(PortalContext);
@@ -36,6 +39,7 @@ export const CornMazeHUD: React.FC = () => {
   const ready = useSelector(portalService, _ready);
   const playing = useSelector(portalService, _playing);
   const gameover = useSelector(portalService, _gameover);
+  const confirmingExit = useSelector(portalService, _confirmingExit);
 
   const timeLeft = Math.max(0, MAZE_TIME_LIMIT_SECONDS - timeElapsed);
 
@@ -146,6 +150,23 @@ export const CornMazeHUD: React.FC = () => {
           onConfirm={() => portalService.send("RETRY")}
         />
       </Modal>
+
+      {/* Early-exit confirmation — fires when the player touches Luna while
+       *  they still have time and lives left. Auto-game-over conditions
+       *  (timer / lives / all crows) bypass this and end the run directly. */}
+      <ConfirmationModal
+        show={confirmingExit}
+        onHide={() => portalService.send("CANCEL_EXIT")}
+        messages={[
+          "Leave the maze early?",
+          `You'll lock in your score of ${score} ${
+            score === 1 ? "crow" : "crows"
+          }.`,
+        ]}
+        confirmButtonLabel="Leave"
+        onCancel={() => portalService.send("CANCEL_EXIT")}
+        onConfirm={() => portalService.send("CONFIRM_EXIT")}
+      />
     </>
   );
 };

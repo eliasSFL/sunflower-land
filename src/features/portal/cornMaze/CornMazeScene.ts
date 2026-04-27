@@ -7,6 +7,18 @@ import { ENEMIES, Enemy } from "./lib/enemies";
 import { CORN_MAZES, getCurrentMazeDay } from "./lib/mazes";
 import { MachineInterpreter } from "./lib/portalMachine";
 
+/**
+ * Module-level override for the maze day that should be loaded when the next
+ * `CornMazeScene` instance is constructed. The Phaser registry isn't available
+ * during `super()`, so we can't read context off the portal service from inside
+ * the constructor; the React layer sets this before calling `new Game()` and
+ * clears it on teardown. `undefined` falls back to the daily rotation.
+ */
+let mazeDayOverride: number | undefined;
+export function setMazeDayOverride(day: number | undefined) {
+  mazeDayOverride = day;
+}
+
 const LUNA: NPCBumpkin = {
   x: 333,
   y: 330,
@@ -24,10 +36,11 @@ export class CornMazeScene extends BaseScene {
   mazePortal?: Phaser.GameObjects.Sprite;
 
   constructor() {
-    // Pick the day once at scene construction — same rotation for every attempt
-    // started today, advances at UTC midnight. Scene restarts (retry) construct
-    // a fresh instance so a midnight rollover mid-session would take effect then.
-    const day = getCurrentMazeDay();
+    // Pick the day once at scene construction. By default we follow the UTC
+    // daily rotation; a beta map-selector can override via `setMazeDayOverride`
+    // before the React layer creates the Phaser game so testers can pick a
+    // specific layout.
+    const day = mazeDayOverride ?? getCurrentMazeDay();
 
     super({
       name: "corn_maze",
@@ -43,6 +56,26 @@ export class CornMazeScene extends BaseScene {
 
   public get portalService(): MachineInterpreter | undefined {
     return this.registry.get("portalService");
+  }
+
+  /**
+   * Phaser fires `init` on every `scene.start()` / `scene.restart()`. We use
+   * the optional `day` payload to swap the maze layout in place — no Game
+   * teardown required. The tilemap key gets nuked from the cache so
+   * `BaseScene.preload` re-loads the new day's JSON instead of reusing the
+   * previously cached one.
+   */
+  init(data?: { day?: number }) {
+    if (data?.day === undefined || data.day === this.currentDay) return;
+    this.currentDay = data.day;
+    // `options` is private on BaseScene but BaseScene.preload reads it via
+    // reference, so mutating before preload runs picks up the new JSON.
+    (
+      this as unknown as { options: { map: { json: unknown } } }
+    ).options.map.json = CORN_MAZES[data.day];
+    if (this.cache.tilemap.has("corn_maze")) {
+      this.cache.tilemap.remove("corn_maze");
+    }
   }
 
   preload() {
@@ -76,35 +109,58 @@ export class CornMazeScene extends BaseScene {
     // Scene boots paused; HUD resumes it once the player dismisses the tips modal.
     this.scene.pause();
 
-    // The portal machine drives pause/resume/stop + scene restart on retry.
+    // The portal machine drives pause/resume/stop + scene restart on retry
+    // and day swap on the beta map selector.
     let previousState: string | undefined;
+    let previousDay: number = this.currentDay;
     const subscription = this.portalService?.subscribe((state) => {
+      // Defensive: stale subscriptions from a destroyed scene fire with a
+      // null `this.scene`. Bail and let the shutdown handler unsubscribe.
+      if (!this.scene) return;
+
       const current = state.value as string;
+      const requestedDay = state.context.selectedDay ?? getCurrentMazeDay();
+
+      // Beta map selector changed — restart the scene with the new day so
+      // `init` can swap the tilemap JSON and reload everything cleanly.
+      if (requestedDay !== previousDay) {
+        previousDay = requestedDay;
+        previousState = current;
+        this.scene.restart({ day: requestedDay });
+        return;
+      }
 
       // Retry: returning to `ready` from a terminal state means the player wants
       // another attempt — restart the scene to respawn crows/enemies/player.
       if (current === "ready" && previousState === "gameover") {
         previousState = current;
-        this.scene.restart();
+        this.scene.restart({ day: this.currentDay });
         return;
       }
       previousState = current;
 
-      if (state.matches("ready") || state.matches("gameover")) {
+      if (
+        state.matches("ready") ||
+        state.matches("gameover") ||
+        state.matches("confirmingExit")
+      ) {
         if (!this.scene.isPaused()) this.scene.pause();
       }
 
       if (state.matches("playing")) {
         if (this.scene.isPaused()) this.scene.resume();
         this.mazePortal?.play("maze_portal_anim", true);
-        // Re-arm portal hit when a new attempt starts.
+        // Re-arm portal hit when a new attempt starts (or the player cancels
+        // an early-exit confirmation and returns to playing).
         this.canHandlePortalHit = true;
       }
     });
 
-    // Drop the subscription when the scene is shut down (e.g. on restart) so we
-    // don't leak callbacks against the long-lived portal service.
-    this.events.once("shutdown", () => subscription?.unsubscribe());
+    // Drop the subscription on shutdown AND destroy — destroy fires when the
+    // host Game is torn down without a prior shutdown.
+    const cleanup = () => subscription?.unsubscribe();
+    this.events.once("shutdown", cleanup);
+    this.events.once("destroy", cleanup);
 
     this.portalService?.send("SCENE_LOADED");
   }
